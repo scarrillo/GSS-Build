@@ -24,7 +24,7 @@
 			</filelist>
 		</compile-css>
 
-		<compile-css group="games">
+		<compile-css group="other">
 			<filelist dir="css/">
 				<file name="elements.css" />
 				<file name="variables-example.gss" />
