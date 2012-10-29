@@ -48,7 +48,7 @@
 			<!-- local is required because properties are immutable,
 				(lost an hour to this!) -->
 			<local name="css"/>
-			<!-- concat file lists into a single line, expeceted by compiler -->
+			<!-- concat file lists into a single line, expected by compiler -->
  			<pathconvert property="css" pathsep=" ">
 				<paths />
 			</pathconvert>
