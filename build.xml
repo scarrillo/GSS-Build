@@ -12,7 +12,7 @@
 <project basedir="." default="compile">
 	<target name="compile">
 
-		<compile-css group="base">
+		<compile-css group="base" prettyPrint="true" destination="css/min/">
 			<filelist dir="css/">
 				<file name="elements.css" />
 				<file name="variables-example.gss" />
@@ -24,7 +24,7 @@
 			</filelist>
 		</compile-css>
 
-		<compile-css group="other">
+		<compile-css group="other" prettyPrint="true" destination="css/min/">
 			<filelist dir="css/">
 				<file name="elements.css" />
 				<file name="variables-example.gss" />
@@ -42,26 +42,32 @@
 
 	<macrodef name="compile-css">
 		<attribute name="group" />
+		<attribute name="destination" />
+		<attribute name="prettyPrint" default="false" />
 		<element name="paths" implicit="true" />
 
 		<sequential>
-			<!-- local is required because properties are immutable,
-				(lost an hour to this!) -->
-			<local name="css"/>
+			<local name="css.pretty" />
+			<condition property="css.pretty" value="--pretty-print" else="">
+				<equals arg1="@{prettyPrint}" arg2="true" />
+			</condition>
+
+			<!-- local is required because properties are immutable -->
+			<local name="css.paths"/>
 			<!-- concat file lists into a single line, expected by compiler -->
- 			<pathconvert property="css" pathsep=" ">
+ 			<pathconvert property="css.paths" pathsep=" ">
 				<paths />
 			</pathconvert>
-			<echo message="Compile: @{group} | Paths: ${css}" />
+			<echo message="Compile: @{group} | Paths: ${css.paths}" />
 
 			<java jar="lib/closure-stylesheets-20111230.jar"
 					fork="true" failonerror="true" maxmemory="128m">
 
-				<arg value="--pretty-print" />
-				<arg line="--output-file css/min/@{group}.css" />
+				<arg line="${css.pretty}" />
+				<arg line="--output-file @{destination}@{group}.css" />
 				<!-- white list a function for this build, remove slash in hyphens -->
 				<!-- <arg line="-\-allowed-non-standard-function urel" /> -->
-				<arg line="${css}" />
+				<arg line="${css.paths}" />
 			</java>
 		</sequential>
 	</macrodef>
