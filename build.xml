@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    author: shawn.carrillo+chrome@gmail.com
+    date: 2012.10.29
+
+    Google Closure's CSS Compiler. Compiler and gss examples from:
+    http://code.google.com/p/closure-stylesheets/
+
+	Ant script inspired by Kyaw's script:
+	https://groups.google.com/forum/?fromgroups=#!topic/closure-stylesheets-discuss/jPMr6s9Po7M
+-->
+<project basedir="." default="compile">
+	<target name="compile">
+
+		<compile-css group="base">
+			<filelist dir="css/">
+				<file name="elements.css" />
+				<file name="variables-example.gss" />
+				<file name="functions-example.gss" />
+				<file name="conditionals-example.gss" />
+				<file name="mixins-example.gss" />
+				<!-- display linting and annotation ability -->
+ 				<!-- <file name="invalid-example.gss" /> -->
+			</filelist>
+		</compile-css>
+
+		<compile-css group="games">
+			<filelist dir="css/">
+				<file name="elements.css" />
+				<file name="variables-example.gss" />
+			</filelist>
+		</compile-css>
+
+		<!-- Wildcard file lists -->
+		<!-- <compile-css group="all">
+			<fileset dir="css/" casesensitive="yes">
+				<include name="*.gss"/>
+				<include name="*.css"/>
+			</fileset>
+		</compile-css> -->
+	</target>
+
+	<macrodef name="compile-css">
+		<attribute name="group" />
+		<element name="paths" implicit="true" />
+
+		<sequential>
+			<!-- local is required because properties are immutable,
+				(lost an hour to this!) -->
+			<local name="css"/>
+			<!-- concat file lists into a single line, expeceted by compiler -->
+ 			<pathconvert property="css" pathsep=" ">
+				<paths />
+			</pathconvert>
+			<echo message="Compile: @{group} | Paths: ${css}" />
+
+			<java jar="lib/closure-stylesheets-20111230.jar"
+					fork="true" failonerror="true" maxmemory="128m">
+
+				<arg value="--pretty-print" />
+				<arg line="--output-file css/min/@{group}.css" />
+				<!-- white list a function for this build, remove slash in hyphens -->
+				<!-- <arg line="-\-allowed-non-standard-function urel" /> -->
+				<arg line="${css}" />
+			</java>
+		</sequential>
+	</macrodef>
+</project>
