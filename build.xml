@@ -12,7 +12,7 @@
 <project basedir="." default="compile">
 	<target name="compile">
 
-		<compile-css group="base" prettyPrint="true" destination="css/min/">
+		<csscomp group="base" prettyPrint="true" destination="css/min/">
 			<filelist dir="css/">
 				<file name="elements.css" />
 				<file name="variables-example.gss" />
@@ -22,31 +22,42 @@
 				<!-- display linting and annotation ability -->
  				<!-- <file name="invalid-example.gss" /> -->
 			</filelist>
-		</compile-css>
+			<!-- Can contain multiple directories, filelist nodes -->
+		</csscomp>
 
-		<compile-css group="other" prettyPrint="true" destination="css/min/">
+		<csscomp group="other" prettyPrint="true" destination="css/min/">
 			<filelist dir="css/">
 				<file name="elements.css" />
 				<file name="variables-example.gss" />
 			</filelist>
-		</compile-css>
+		</csscomp>
 
 		<!-- Wildcard file lists -->
-		<!-- <compile-css group="all">
+		<!-- <csscomp group="all">
 			<fileset dir="css/" casesensitive="yes">
 				<include name="*.gss"/>
 				<include name="*.css"/>
 			</fileset>
-		</compile-css> -->
+		</csscomp> -->
 	</target>
 
-	<macrodef name="compile-css">
+	<macrodef name="csscomp">
 		<attribute name="group" />
 		<attribute name="destination" />
 		<attribute name="prettyPrint" default="false" />
 		<element name="paths" implicit="true" />
 
 		<sequential>
+			<!-- Create a dynamic property name based on group, note this doesn't work with default attributes -->
+			<uptodate property="@{group}.current" targetfile="@{destination}@{group}.css">
+				<srcresources>
+					<union>
+						<paths />
+					</union>
+				</srcresources>
+			</uptodate>
+			<!-- <echo message="[csscomp] Cached: @{group} | ${@{group}.current}" /> -->
+
 			<local name="css.pretty" />
 			<condition property="css.pretty" value="--pretty-print" else="">
 				<equals arg1="@{prettyPrint}" arg2="true" />
@@ -58,17 +69,34 @@
  			<pathconvert property="css.paths" pathsep=" ">
 				<paths />
 			</pathconvert>
-			<echo message="Compile: @{group} | Paths: ${css.paths}" />
 
-			<java jar="lib/closure-stylesheets-20111230.jar"
-					fork="true" failonerror="true" maxmemory="128m">
+			<antcall target="css-cached">
+				<param name="compile.group" value="@{group}"/>
+			</antcall>
 
-				<arg line="${css.pretty}" />
-				<arg line="--output-file @{destination}@{group}.css" />
-				<!-- white list a function for this build, remove slash in hyphens -->
-				<!-- <arg line="-\-allowed-non-standard-function urel" /> -->
-				<arg line="${css.paths}" />
-			</java>
+			<antcall target="css-compile">
+				<param name="compile.group" value="@{group}"/>
+				<param name="compile.pretty" value="${css.pretty}"/>
+				<param name="compile.destination" value="@{destination}@{group}.css"/>
+				<param name="compile.paths" value="${css.paths}"/>
+			</antcall>
 		</sequential>
 	</macrodef>
+
+	<target name="css-cached" if="${compile.group}.current">
+		<echo message="${compile.group}" />
+	</target>
+
+	<target name="css-compile" unless="${compile.group}.current">
+		<echo message="${compile.group}" />
+		<java jar="lib/closure-stylesheets-20111230.jar"
+				fork="true" failonerror="true" maxmemory="128m">
+
+			<arg line="${compile.pretty}" />
+			<arg line="--output-file ${compile.destination}" />
+			<!-- white list a function for this build, remove slash in hyphens -->
+			<!-- <arg line="-\-allowed-non-standard-function urel" /> -->
+			<arg line="${compile.paths}" />
+		</java>
+	</target>
 </project>
