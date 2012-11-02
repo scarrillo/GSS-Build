@@ -12,7 +12,7 @@
 <project basedir="." default="compile">
 	<target name="compile">
 
-		<csscomp group="base" prettyPrint="true" destination="css/min/">
+		<csscomp group="base" prettyPrint="true" destination="css/min/" forceRecompile="false">
 			<filelist dir="css/">
 				<file name="elements.css" />
 				<file name="variables-example.gss" />
@@ -25,7 +25,7 @@
 			<!-- Can contain multiple directories, filelist nodes -->
 		</csscomp>
 
-		<csscomp group="other" prettyPrint="true" destination="css/min/">
+		<csscomp group="other" prettyPrint="true" destination="css/min/" forceRecompile="false">
 			<filelist dir="css/">
 				<file name="elements.css" />
 				<file name="variables-example.gss" />
@@ -44,19 +44,30 @@
 	<macrodef name="csscomp">
 		<attribute name="group" />
 		<attribute name="destination" />
+		<attribute name="forceRecompile" />
 		<attribute name="prettyPrint" default="false" />
 		<element name="paths" implicit="true" />
 
 		<sequential>
 			<!-- Create a dynamic property name based on group, note this doesn't work with default attributes -->
-			<uptodate property="@{group}.current" targetfile="@{destination}@{group}.css">
+			<!-- ant: 1.7: dynamic property: <uptodate property="@{group}.current" targetfile="@{destination}@{group}.css"> -->
+			<local name="css.current" />
+			<uptodate property="css.current" targetfile="@{destination}@{group}.css">
 				<srcresources>
 					<union>
 						<paths />
 					</union>
 				</srcresources>
 			</uptodate>
-			<!-- <echo message="[csscomp] Cached: @{group} | ${@{group}.current}" /> -->
+
+			<!-- Compile when either forceRecompile is true or a file has been modified -->
+			<local name="css.compile" />
+			<condition property="css.compile" value="true" else="false">
+				<or>
+					<istrue value="@{forceRecompile}" />
+					<not><isset property="css.current"  /></not>
+				</or>
+			</condition>
 
 			<local name="css.pretty" />
 			<condition property="css.pretty" value="--pretty-print" else="">
@@ -70,24 +81,23 @@
 				<paths />
 			</pathconvert>
 
-			<antcall target="css-cached">
-				<param name="compile.group" value="@{group}"/>
-			</antcall>
-
 			<antcall target="css-compile">
+				<param name="compile.enable" value="${css.compile}"/>
 				<param name="compile.group" value="@{group}"/>
 				<param name="compile.pretty" value="${css.pretty}"/>
 				<param name="compile.destination" value="@{destination}@{group}.css"/>
 				<param name="compile.paths" value="${css.paths}"/>
 			</antcall>
+
+			<antcall target="css-cached">
+				<param name="compile.enable" value="${css.compile}"/>
+				<param name="compile.group" value="@{group}"/>
+			</antcall>
 		</sequential>
 	</macrodef>
 
-	<target name="css-cached" if="${compile.group}.current">
-		<echo message="${compile.group}" />
-	</target>
-
-	<target name="css-compile" unless="${compile.group}.current">
+	<!-- ant: 1.7: dynamic property: <target name="css-compile" if="${compile.group}.current"> -->
+	<target name="css-compile" if="${compile.enable}">
 		<echo message="${compile.group}" />
 		<java jar="lib/closure-stylesheets-20111230.jar"
 				fork="true" failonerror="true" maxmemory="128m">
@@ -99,4 +109,10 @@
 			<arg line="${compile.paths}" />
 		</java>
 	</target>
+
+	<!-- ant: 1.7: dynamic property: <target name="css-cached" if="${compile.group}.current"> -->
+	<target name="css-cached" unless="${compile.enable}">
+		<echo message="${compile.group}" />
+	</target>
+
 </project>
